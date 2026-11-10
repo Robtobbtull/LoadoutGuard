@@ -71,11 +71,10 @@ Right-click the tray icon and choose **Uninstall...**. This removes LoadoutGuard
 
 Open it by double-clicking the tray icon, or by starting `LoadoutGuard.exe` again. Every change applies at once; there's no Save button and no restart needed. On small or highly scaled screens (such as 1366x768, or a 1080p laptop at 150%) the window shrinks to fit.
 
-- **Status**: whether `Game.log` was found, and whether the loadout editor is open and Save clicks are being watched.
 - **Banner**: how long the banner stays, **Message** for your own reminder text (leave it empty for the standard message), and **Test banner** to check that the banner and the blink show over your game.
 - **Red flash**: **Flash the screen red** turns the blink on or off. **Flash for** sets how long it blinks: 3 to 60 seconds, or **Until closed** to keep blinking until the banner closes.
 - **General**: **Start with Windows** (off by default), and **Choose theme...**, which opens the theme picker: Monochrome (black and white, the default), Nebula (purple), Ember (clay), Midnight (blue), mobiGlas (cyan) or Paper (light). The theme also colours the banner, the tray icon and, on Windows 11, the title bar.
-- **Path to Game.log**: where your log is. Use **Browse...** for another drive or the PTU.
+- **Path to Game.log**: where your log is. Type or paste the path, or use **Browse...**, for another drive or the PTU. If the log isn't found, this says so in red.
 
 Closing the window keeps LoadoutGuard running in the tray. Right-click the tray icon to **Pause reminders**, **Uninstall...** or **Exit**.
 

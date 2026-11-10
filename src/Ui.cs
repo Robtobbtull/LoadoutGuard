@@ -371,26 +371,6 @@ class PathBox : PaintedControl
     }
 }
 
-// A small round status light.
-class Dot : PaintedControl
-{
-    Color color = Color.Gray;
-
-    public Color Color
-    {
-        get { return color; }
-        set { color = value; Invalidate(); }
-    }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        var g = e.Graphics;
-        g.Clear(BackColor);
-        g.SmoothingMode = SmoothingMode.AntiAlias;
-        using (var brush = new SolidBrush(color)) g.FillEllipse(brush, 0, 0, Width - 1, Height - 1);
-    }
-}
-
 // The shield mark next to the title.
 class Mark : PaintedControl
 {

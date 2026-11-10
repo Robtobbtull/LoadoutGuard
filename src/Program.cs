@@ -193,7 +193,7 @@ class TrayApp : ApplicationContext
         else if (!atSignIn || !tail.FileFound) // started with Windows: stay quiet unless something is wrong
             tray.ShowBalloonTip(5000, "LoadoutGuard is running",
                 tail.FileFound
-                    ? "Watching " + settings.GameLog
+                    ? "It stays in the system tray. Double-click the icon to open it."
                     : "Game.log not found. Double-click the tray icon to set where it is.",
                 tail.FileFound ? ToolTipIcon.Info : ToolTipIcon.Warning);
     }
@@ -203,8 +203,8 @@ class TrayApp : ApplicationContext
         var now = DateTime.UtcNow;
         foreach (var line in tail.ReadNewLines()) detector.Check(line, now);
         UpdateMouseWatcher(now);
-        tray.Text = tail.FileFound ? "LoadoutGuard: watching Game.log" : "LoadoutGuard: Game.log not found";
-        if (window != null) window.ShowStatus(tail.FileFound, detector.EditorProbablyOpen(now), mouse.Running);
+        tray.Text = tail.FileFound ? "LoadoutGuard" : "LoadoutGuard: Game.log not found";
+        if (window != null) window.ShowStatus(tail.FileFound);
     }
 
     // The mouse hook only runs while the loadout editor is probably open; the rest of the time it is off.
@@ -250,7 +250,7 @@ class TrayApp : ApplicationContext
             window = new MainWindow(settings, OnSettingsChanged, delegate { ShowBanner(); });
             window.FormClosed += delegate { window = null; };
         }
-        window.ShowStatus(tail.FileFound, detector.EditorProbablyOpen(DateTime.UtcNow), mouse.Running);
+        window.ShowStatus(tail.FileFound);
         window.Show();
         if (window.WindowState == FormWindowState.Minimized) window.WindowState = FormWindowState.Normal;
         window.Activate();

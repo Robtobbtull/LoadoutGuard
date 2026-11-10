@@ -35,6 +35,8 @@ class LogTail
         }
         catch (FileNotFoundException) { Missing(); return lines; }
         catch (DirectoryNotFoundException) { Missing(); return lines; }
+        catch (System.ArgumentException) { Missing(); return lines; } // not a path at all: empty or half typed
+        catch (System.NotSupportedException) { Missing(); return lines; }
         catch (IOException) { return lines; } // file busy for a moment (game moving it); retry next poll
         catch (System.UnauthorizedAccessException) { return lines; }
 

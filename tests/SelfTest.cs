@@ -58,6 +58,11 @@ static class SelfTest
         {
             File.Delete(path);
         }
+        foreach (var typed in new[] { "", "   ", @"C:\a:b\Game.log", @"C:\a<b|c", "\"C:/Game.log" })
+        {
+            var tail = new LogTail(typed);
+            Check(tail.ReadNewLines().Count == 0 && !tail.FileFound, "a half-typed path is just a missing file: [" + typed + "]");
+        }
     }
 
     static void TestDetector()

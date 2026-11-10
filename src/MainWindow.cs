@@ -4,30 +4,29 @@ using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
 
-// The LoadoutGuard window: status, the banner, the red flash, theme and Game.log.
+// The LoadoutGuard window: the banner, the red flash, theme and Game.log.
 // Every change is saved and applied at once; closing the window keeps LoadoutGuard in the tray.
 class MainWindow : Form
 {
     static readonly int[] SecondSteps = { 5, 10, 15, 20, 30, 45, 60, 90, 120 };
     static readonly int[] FlashSteps = { 3, 5, 10, 20, 30, 60, 0 }; // 0 = until the banner closes
-    public const int Height96 = 626;
+    public const int Height96 = 582;
     const int Width96 = 540, Pad = 24, Inner = Width96 - 2 * Pad, Right = Inner - 18, RowH = 48;
     const string FooterText = "Closing this window keeps LoadoutGuard running in the tray.";
 
     readonly Settings settings;
     readonly Action changed, testBanner;
     readonly Mark mark = new Mark();
-    readonly Label title = new Label(), logStatus = new Label(), editorStatus = new Label(), footer = new Label();
+    readonly Label title = new Label(), footer = new Label();
     readonly Label secondsValue = new Label(), flashValue = new Label(), themeName = new Label();
-    readonly Dot logDot = new Dot(), editorDot = new Dot();
     readonly Toggle startup = new Toggle(), flash = new Toggle();
     readonly PillButton fewer = new PillButton(), more = new PillButton(), test = new PillButton();
     readonly PillButton shorter = new PillButton(), longer = new PillButton();
     readonly PillButton chooseTheme = new PillButton(), browse = new PillButton();
-    readonly PathBox logPath = new PathBox();
-    readonly TextBox customMessage = new TextBox();
+    readonly TextBox customMessage = new TextBox(), logPath = new TextBox();
     readonly List<Label> sections = new List<Label>(), rowTitles = new List<Label>(), rowNotes = new List<Label>();
-    bool logFound, editorOpen, watchingSave;
+    Label logSection;
+    bool logFound;
 
     public MainWindow(Settings settings, Action changed, Action testBanner)
     {
@@ -48,14 +47,10 @@ class MainWindow : Form
         title.Text = "LoadoutGuard";
         title.Font = Ui.Heading(19f);
         PlaceText(this, title, 62, 17);
-        Place(this, logDot, Pad + 2, 73, 8, 8);
-        PlaceText(this, logStatus, Pad + 16, 65);
-        Place(this, editorDot, Pad + 2, 95, 8, 8);
-        PlaceText(this, editorStatus, Pad + 16, 87);
 
         // banner
-        Section("Banner", 122);
-        var banner = AddCard(142, 2, RowH);
+        Section("Banner", 78);
+        var banner = AddCard(98, 2, RowH);
 
         RowTitle(banner, 0, "Show for");
         fewer.Text = "−";
@@ -86,8 +81,8 @@ class MainWindow : Form
         test.Click += delegate { testBanner(); };
 
         // red flash
-        Section("Red flash", 256);
-        var red = AddCard(276, 2, RowH);
+        Section("Red flash", 212);
+        var red = AddCard(232, 2, RowH);
         ToggleRow(red, 0, flash, "Flash the screen red", "A light red blink over the game; it stays visible",
             settings.Flash, delegate { settings.Flash = flash.Checked; });
         var flashLabel = new Label { Text = "Flash for", Font = Ui.Font(10.5f) };
@@ -104,8 +99,8 @@ class MainWindow : Form
         longer.Click += delegate { SetFlashSeconds(+1); };
 
         // theme and startup
-        Section("General", 390);
-        var general = AddCard(410, 2, RowH);
+        Section("General", 346);
+        var general = AddCard(366, 2, RowH);
         var themeLabel = new Label { Text = "Theme", Font = Ui.Font(10.5f) };
         PlaceText(general, themeLabel, 18, 5);
         rowTitles.Add(themeLabel);
@@ -123,34 +118,42 @@ class MainWindow : Form
             AutoStart.Enabled, delegate { SetAutoStart(); });
 
         // Game.log
-        Section("Path to Game.log", 524);
-        logPath.Text = settings.GameLog;
-        Place(this, logPath, Pad, 544, Inner - 108, 36);
+        logSection = Section("Path to Game.log", 480);
+        // typed, pasted or browsed; same rounded frame as the message box
+        var logFrame = new PathBox { Cursor = Cursors.IBeam };
+        Place(this, logFrame, Pad, 500, Inner - 108, 36);
+        logFrame.Click += delegate { logPath.Focus(); };
+        logPath.BorderStyle = BorderStyle.None;
+        logPath.Text = settings.GameLog; // before the handler, so loading doesn't count as a change
+        Place(this, logPath, Pad + 12, 500, Inner - 108 - 24, 20);
+        logPath.Top = logFrame.Top + (logFrame.Height - logPath.Height) / 2;
+        logPath.BringToFront();
+        logPath.TextChanged += delegate
+        {
+            settings.GameLog = logPath.Text.Trim().Trim('"'); // Explorer's "Copy as path" adds quotes
+            Changed();
+        };
+        logPath.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) e.SuppressKeyPress = true; }; // no error ding
         browse.Text = "Browse...";
-        Place(this, browse, Pad + Inner - 100, 544, 100, 36);
+        Place(this, browse, Pad + Inner - 100, 500, 100, 36);
         browse.Click += delegate { Browse(); };
 
         footer.Text = FooterText;
         footer.Font = Ui.Font(9f);
-        PlaceText(this, footer, Pad, 594);
+        PlaceText(this, footer, Pad, 550);
 
         ApplyTheme();
         Shown += delegate { ActiveControl = null; }; // no blinking caret in the message box on open
     }
 
     // Called by TrayApp every second while the window is open.
-    public void ShowStatus(bool logFound, bool editorOpen, bool watchingSave)
+    // Nothing shows while all is well; a missing Game.log is said where it can be fixed.
+    public void ShowStatus(bool logFound)
     {
         this.logFound = logFound;
-        this.editorOpen = editorOpen;
-        this.watchingSave = watchingSave;
         var t = Theme.Find(settings.Theme);
-        logStatus.Text = logFound ? "Watching Game.log" : "Game.log not found. Set where it is below.";
-        logDot.Color = logFound ? t.Accent : t.Danger;
-        editorStatus.Text = !editorOpen ? "Loadout editor not open"
-            : watchingSave ? "Loadout editor open, watching for Save clicks"
-            : "Loadout editor open";
-        editorDot.Color = editorOpen ? t.Accent : t.Text3;
+        logSection.Text = logFound ? "Path to Game.log" : "Game.log not found. Set where it is:";
+        logSection.ForeColor = logFound ? t.Text3 : t.Danger;
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -168,16 +171,16 @@ class MainWindow : Form
         Ui.StyleTitleBar(this, t);
 
         title.ForeColor = t.Text;
-        logStatus.ForeColor = editorStatus.ForeColor = t.Text2;
         secondsValue.ForeColor = flashValue.ForeColor = customMessage.ForeColor = t.Text;
-        customMessage.BackColor = t.Side;
+        logPath.ForeColor = t.Text2;
+        customMessage.BackColor = logPath.BackColor = t.Side;
         footer.ForeColor = t.Text3;
         foreach (var label in sections) label.ForeColor = t.Text3;
         foreach (var label in rowTitles) label.ForeColor = t.Text;
         foreach (var label in rowNotes) label.ForeColor = t.Text3;
         themeName.Text = t.Name;
 
-        ShowStatus(logFound, editorOpen, watchingSave);
+        ShowStatus(logFound);
     }
 
     void SetAutoStart()
@@ -238,12 +241,14 @@ class MainWindow : Form
         {
             dialog.Title = "Find Star Citizen's Game.log (in the LIVE or PTU folder)";
             dialog.Filter = "Game.log|Game.log|Log files (*.log)|*.log";
-            var folder = Path.GetDirectoryName(settings.GameLog);
-            if (Directory.Exists(folder)) dialog.InitialDirectory = folder;
+            try
+            {
+                var folder = Path.GetDirectoryName(settings.GameLog);
+                if (Directory.Exists(folder)) dialog.InitialDirectory = folder;
+            }
+            catch (ArgumentException) { } // the typed text is not a path
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
-            settings.GameLog = dialog.FileName;
-            logPath.Text = dialog.FileName;
-            Changed();
+            logPath.Text = dialog.FileName; // its handler saves and applies
         }
     }
 
@@ -270,11 +275,12 @@ class MainWindow : Form
 
     // ---- layout helpers (positions at 100% scaling) ----
 
-    void Section(string text, int y)
+    Label Section(string text, int y)
     {
         var label = new Label { Text = text, Font = Ui.Font(9f) };
         PlaceText(this, label, Pad + 2, y);
         sections.Add(label);
+        return label;
     }
 
     Card AddCard(int y, int rows, int rowHeight)
