@@ -31,7 +31,7 @@ LoadoutGuard does **not**:
 - inject anything into the game, or hook the game process
 - send keyboard or mouse input, or block or change any click
 - take screenshots
-- connect to the internet
+- connect to the internet, except when you click **Check for updates**
 
 It reads a text file the game writes to disk, the same way community kill trackers do. While the loadout editor is open, it also uses a standard Windows low-level mouse hook to see where you click. That's the same mechanism Discord push-to-talk and AutoHotkey use, and it runs inside LoadoutGuard, not inside the game. No third-party tool is ever officially guaranteed safe by CIG, but this is a low-risk way for such a tool to work.
 
@@ -42,7 +42,7 @@ About 30 MB of RAM and effectively 0% CPU. Once a second it checks whether `Game
 ## Install
 
 1. Download `LoadoutGuard.exe` from the [Releases](../../releases) page.
-2. Run it. The LoadoutGuard window opens the first time; after that it starts quietly in the system tray (shield icon).
+2. Run it. The LoadoutGuard window opens the first time. LoadoutGuard also turns on **Start with Windows**, so from then on it starts quietly in the system tray (shield icon) when you sign in, and you don't have to remember it. You can turn that off in the window.
 3. Play in **Borderless** window mode. In exclusive Fullscreen, Windows may hide the banner and the red blink.
 
 No installer and no runtime to install. It uses .NET Framework 4.8, which is part of Windows 10 and 11.
@@ -57,15 +57,19 @@ Windows SmartScreen may warn you because the exe is not code-signed. Choose *Mor
 irm https://raw.githubusercontent.com/Robtobbtull/LoadoutGuard/main/install.ps1 | iex
 ```
 
-This downloads the source code of the latest release to `%LOCALAPPDATA%\LoadoutGuard`, adds **LoadoutGuard** to the Start menu and starts it. Each time LoadoutGuard starts, Windows PowerShell compiles that source in memory and runs it, so there is no exe for Smart App Control to block. Both scripts are short; read [install.ps1](install.ps1) and [LoadoutGuard.ps1](LoadoutGuard.ps1) first if you like. Starting takes a second or two longer than the exe, and it uses about 100 MB of RAM instead of 30 MB. Run the same command again to update.
+This downloads the source code of the latest release to `%LOCALAPPDATA%\LoadoutGuard`, adds **LoadoutGuard** to the Start menu and starts it. Each time LoadoutGuard starts, Windows PowerShell compiles that source in memory and runs it, so there is no exe for Smart App Control to block. Both scripts are short; read [install.ps1](install.ps1) and [LoadoutGuard.ps1](LoadoutGuard.ps1) first if you like. Starting takes a second or two longer than the exe, and it uses about 100 MB of RAM instead of 30 MB.
+
+### Update
+
+Open the window (double-click the tray icon) and click **More...** at the top right, then **Check for updates**. If there's a newer release, LoadoutGuard asks first, then downloads it, replaces itself and restarts. Your settings stay. This is the only time LoadoutGuard connects to the internet: it asks GitHub for the latest release, and downloads it only if you say yes. With the PowerShell install, this runs the install command above again.
 
 To remove it, use **Uninstall** (see below).
 
 ### Uninstall
 
-Right-click the tray icon and choose **Uninstall...**. This removes LoadoutGuard's settings, its startup entry, the PowerShell install and Start menu shortcut if you have them, and `LoadoutGuard.exe` itself, then exits.
+Open the window (double-click the tray icon) and click **More...** at the top right, then **Uninstall...**. This removes LoadoutGuard's settings, its startup entry, the PowerShell install and Start menu shortcut if you have them, and `LoadoutGuard.exe` itself, then exits.
 
-**Start with Windows:** turn on **Start with Windows** in the window. LoadoutGuard then adds itself to your user's startup list (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `LoadoutGuard`; no admin rights needed) and starts quietly in the tray when you sign in. **Uninstall** removes the entry too.
+**Start with Windows:** on from the first run; turn it off in the window if you like. LoadoutGuard adds itself to your user's startup list (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `LoadoutGuard`; no admin rights needed) and starts quietly in the tray when you sign in. **Uninstall** removes the entry too.
 
 ## The window
 
@@ -73,10 +77,11 @@ Open it by double-clicking the tray icon, or by starting `LoadoutGuard.exe` agai
 
 - **Banner**: how long the banner stays, **Message** for your own reminder text (leave it empty for the standard message), and **Test banner** to check that the banner and the blink show over your game.
 - **Red flash**: **Flash the screen red** turns the blink on or off. **Flash for** sets how long it blinks: 3 to 60 seconds, or **Until closed** to keep blinking until the banner closes.
-- **General**: **Start with Windows** (off by default), and **Choose theme...**, which opens the theme picker: Monochrome (black and white, the default), Nebula (purple), Ember (clay), Midnight (blue), mobiGlas (cyan) or Paper (light). The theme also colours the banner, the tray icon and, on Windows 11, the title bar.
+- **General**: **Start with Windows** (on by default) and **Choose theme...**, which opens the theme picker: Monochrome (black and white, the default), Nebula (purple), Ember (clay), Midnight (blue), mobiGlas (cyan) or Paper (light). The theme also colours the banner, the tray icon and, on Windows 11, the title bar.
+- **More...** (top right): the version, **Check for updates** and **Uninstall...**.
 - **Path to Game.log**: where your log is. Type or paste the path, or use **Browse...**, for another drive or the PTU. If the log isn't found, this says so in red.
 
-Closing the window keeps LoadoutGuard running in the tray. Right-click the tray icon to **Pause reminders**, **Uninstall...** or **Exit**.
+Closing the window keeps LoadoutGuard running in the tray. Right-click the tray icon to **Pause reminders** or **Exit**.
 
 ## Settings file
 
@@ -134,6 +139,9 @@ Do not paste whole `Game.log` files into public issues. They contain your player
 | `src/Ui.cs` | Drawing helpers and the custom controls: switch, button, theme card. |
 | `src/ThemePicker.cs` | The theme picker window. |
 | `src/Theme.cs` | The colour themes. |
+| `src/Updater.cs` | Check for updates: asks GitHub for the latest release and swaps in the new exe. |
+| `src/MoreWindow.cs` | The small "More..." window: version, Check for updates, Uninstall. |
+| `src/Popup.cs` | The themed popup for update and uninstall messages. |
 | `src/Program.cs` | Tray icon and main loop. |
 | `install.ps1` | The PowerShell install, for PCs where Smart App Control blocks the exe. |
 | `LoadoutGuard.ps1` | Starts LoadoutGuard from its source, compiled in memory by PowerShell. |

@@ -25,6 +25,12 @@ jobs:
           name: LoadoutGuard
           path: bin/LoadoutGuard.exe
 
+      # Otherwise "Check for updates" would offer this release again forever.
+      - name: Check the tag matches Updater.Current
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: grep -q "Current = \"${GITHUB_REF_NAME#v}\"" src/Updater.cs || { echo "Set Updater.Current in src/Updater.cs to ${GITHUB_REF_NAME#v}"; exit 1; }
+
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash

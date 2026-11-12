@@ -30,6 +30,7 @@ static class SelfTest
         TestDetector();
         TestClickArea();
         TestSettings();
+        TestUpdater();
         Console.WriteLine(failures == 0 ? "All self-tests passed." : failures + " self-test(s) failed.");
         return failures == 0 ? 0 : 1;
     }
@@ -143,6 +144,16 @@ static class SelfTest
     static Point At(Size size, int x1440p, int y1440p)
     {
         return new Point((int)Math.Round(x1440p * size.Width / 2560.0), (int)Math.Round(y1440p * size.Height / 1440.0));
+    }
+
+    static void TestUpdater()
+    {
+        Check(Updater.IsNewer("v1.0.2", "1.0.1"), "a higher release is newer");
+        Check(Updater.IsNewer("v1.10.0", "1.9.0"), "versions compare as numbers, not text");
+        Check(!Updater.IsNewer("v1.0.1", "1.0.1"), "the same version is not newer");
+        Check(!Updater.IsNewer("v1.0.0", "1.0.1"), "an older release is not newer");
+        foreach (var bad in new[] { null, "", "latest", "v1.0.2/../evil", "v1.0.2-beta" })
+            Check(!Updater.IsNewer(bad, "1.0.1"), "a tag that is not a plain version is never used: [" + bad + "]");
     }
 
     static void TestSettings()

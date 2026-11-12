@@ -15,24 +15,26 @@ class MainWindow : Form
     const string FooterText = "Closing this window keeps LoadoutGuard running in the tray.";
 
     readonly Settings settings;
-    readonly Action changed, testBanner;
+    readonly Action changed, testBanner, checkUpdates, uninstall;
     readonly Mark mark = new Mark();
     readonly Label title = new Label(), footer = new Label();
     readonly Label secondsValue = new Label(), flashValue = new Label(), themeName = new Label();
     readonly Toggle startup = new Toggle(), flash = new Toggle();
     readonly PillButton fewer = new PillButton(), more = new PillButton(), test = new PillButton();
     readonly PillButton shorter = new PillButton(), longer = new PillButton();
-    readonly PillButton chooseTheme = new PillButton(), browse = new PillButton();
+    readonly PillButton chooseTheme = new PillButton(), browse = new PillButton(), options = new PillButton();
     readonly TextBox customMessage = new TextBox(), logPath = new TextBox();
     readonly List<Label> sections = new List<Label>(), rowTitles = new List<Label>(), rowNotes = new List<Label>();
     Label logSection;
     bool logFound;
 
-    public MainWindow(Settings settings, Action changed, Action testBanner)
+    public MainWindow(Settings settings, Action changed, Action testBanner, Action checkUpdates, Action uninstall)
     {
         this.settings = settings;
         this.changed = changed;
         this.testBanner = testBanner;
+        this.checkUpdates = checkUpdates;
+        this.uninstall = uninstall;
 
         Text = "LoadoutGuard";
         FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -47,6 +49,19 @@ class MainWindow : Form
         title.Text = "LoadoutGuard";
         title.Font = Ui.Heading(19f);
         PlaceText(this, title, 62, 17);
+        // version, updates and uninstall: rarely needed, so in their own small window
+        options.Text = "More...";
+        Place(this, options, Pad + Inner - 90, 22, 90, 32);
+        options.Click += delegate
+        {
+            Action chosen;
+            using (var dialog = new MoreWindow(settings))
+            {
+                dialog.ShowDialog(this);
+                chosen = dialog.UpdateChosen ? checkUpdates : dialog.UninstallChosen ? uninstall : null;
+            }
+            if (chosen != null) chosen(); // after the dialog closed: both may exit LoadoutGuard
+        };
 
         // banner
         Section("Banner", 78);

@@ -40,12 +40,13 @@ static class AutoStart
         get { return Environment.GetEnvironmentVariable("LOADOUTGUARD_COMMAND") ?? "\"" + Application.ExecutablePath + "\""; }
     }
 
-    // If LoadoutGuard was moved since startup was turned on, point the entry at this copy.
-    public static void Refresh()
+    // On by default from the first run, so nobody has to remember to start LoadoutGuard.
+    // Later, if LoadoutGuard was moved since startup was turned on, point the entry at this copy.
+    public static void Refresh(bool firstRun)
     {
         try
         {
-            if (Enabled) Enabled = true;
+            if (firstRun || Enabled) Enabled = true;
         }
         catch (Exception e)
         {
@@ -106,13 +107,20 @@ static class Program
                 return;
             }
             settings.GameLog = FindGameLog(settings.GameLog);
-            AutoStart.Refresh();
+            AutoStart.Refresh(settings.IsNew);
+            if (!RunByPowerShell) Updater.CleanUp(Application.ExecutablePath);
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false); // labels draw like TextRenderer measures
             bool atSignIn = Array.IndexOf(args, AutoStart.Argument) >= 0;
             Application.Run(new TrayApp(settings, detector, saveButton, atSignIn));
         }
+    }
+
+    // Started by LoadoutGuard.ps1 (the PowerShell install), the exe is powershell.exe, which must never be touched.
+    public static bool RunByPowerShell
+    {
+        get { return string.Equals(Path.GetFileName(Application.ExecutablePath), "powershell.exe", StringComparison.OrdinalIgnoreCase); }
     }
 
     // Uses the configured path if it exists, else looks for a LIVE install on every fixed drive.
@@ -153,6 +161,7 @@ class TrayApp : ApplicationContext
     readonly ScreenFlash flash = new ScreenFlash();
     readonly MouseWatcher mouse = new MouseWatcher();
     readonly MenuItem pauseItem;
+    Popup updatePopup; // null when no update check is showing
     readonly EventWaitHandle showSignal;
     readonly RegisteredWaitHandle showWait;
     readonly SynchronizationContext ui;
@@ -174,8 +183,7 @@ class TrayApp : ApplicationContext
         var openItem = new MenuItem("Open LoadoutGuard", delegate { ShowWindow(); });
         openItem.DefaultItem = true;
         pauseItem = new MenuItem("Pause reminders", delegate { pauseItem.Checked = !pauseItem.Checked; });
-        tray.ContextMenu = new ContextMenu(new[] { openItem, pauseItem, new MenuItem("-"),
-            new MenuItem("Uninstall...", delegate { Uninstall(); }), new MenuItem("Exit", delegate { ExitThread(); }) });
+        tray.ContextMenu = new ContextMenu(new[] { openItem, pauseItem, new MenuItem("-"), new MenuItem("Exit", delegate { ExitThread(); }) });
         tray.Icon = Ui.MakeIcon(Theme.Find(settings.Theme));
         tray.DoubleClick += delegate { ShowWindow(); };
         tray.Visible = true;
@@ -247,7 +255,7 @@ class TrayApp : ApplicationContext
     {
         if (window == null)
         {
-            window = new MainWindow(settings, OnSettingsChanged, delegate { ShowBanner(); });
+            window = new MainWindow(settings, OnSettingsChanged, delegate { ShowBanner(); }, CheckForUpdates, Uninstall);
             window.FormClosed += delegate { window = null; };
         }
         window.ShowStatus(tail.FileFound);
@@ -259,8 +267,14 @@ class TrayApp : ApplicationContext
     // Removes everything LoadoutGuard put on this PC, then exits.
     void Uninstall()
     {
-        if (MessageBox.Show("Remove LoadoutGuard from this PC?\n\nThis deletes its settings, its startup entry and LoadoutGuard itself.",
-                "Uninstall LoadoutGuard", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
+        var popup = new Popup(Theme.Find(settings.Theme));
+        popup.Set("Uninstall LoadoutGuard?",
+            "This removes LoadoutGuard from this PC: its settings, its startup entry and the program itself. Your game is not touched.",
+            "Uninstall", delegate { popup.Close(); RemoveEverything(); }, "Cancel");
+    }
+
+    void RemoveEverything()
+    {
         try
         {
             AutoStart.Enabled = false;
@@ -276,10 +290,106 @@ class TrayApp : ApplicationContext
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LoadoutGuard"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "LoadoutGuard.lnk"),
         };
-        // started by LoadoutGuard.ps1 the exe is powershell.exe, which must stay
-        if (!string.Equals(Path.GetFileName(Application.ExecutablePath), "powershell.exe", StringComparison.OrdinalIgnoreCase))
-            paths.Add(Application.ExecutablePath);
+        if (!Program.RunByPowerShell) paths.Add(Application.ExecutablePath);
         Process.Start(new ProcessStartInfo("cmd.exe", "/c " + DeleteCommand(paths)) { CreateNoWindow = true, UseShellExecute = false });
+        ExitThread();
+    }
+
+    // Network and file work runs off the UI thread: the mouse hook lives there and must never stall.
+    void CheckForUpdates()
+    {
+        if (updatePopup != null)
+        {
+            updatePopup.Activate(); // already checking or downloading
+            return;
+        }
+        OpenUpdatePopup();
+        StartCheck();
+    }
+
+    void OpenUpdatePopup()
+    {
+        updatePopup = new Popup(Theme.Find(settings.Theme));
+        updatePopup.FormClosed += delegate { updatePopup = null; };
+    }
+
+    void StartCheck()
+    {
+        updatePopup.Set("Checking for updates...", "Asking GitHub for the latest version.", null, null, "Cancel");
+        ThreadPool.QueueUserWorkItem(delegate
+        {
+            string tag = null, error = null;
+            try
+            {
+                tag = Updater.LatestTag();
+            }
+            catch (Exception e)
+            {
+                error = e.Message;
+            }
+            ui.Post(delegate { OfferUpdate(tag, error); }, null);
+        });
+    }
+
+    void OfferUpdate(string tag, string error)
+    {
+        if (updatePopup == null) return; // cancelled
+        if (error != null)
+        {
+            updatePopup.Set("Couldn't check for updates", error + "\n\nCheck your internet connection and try again.", "Try again", StartCheck, "Close");
+            return;
+        }
+        if (!Updater.IsNewer(tag, Updater.Current))
+        {
+            updatePopup.Set("You're up to date", "LoadoutGuard " + Updater.Current + " is the latest version.", null, null, "Close");
+            return;
+        }
+        updatePopup.Set("Update available", "LoadoutGuard " + tag.TrimStart('v', 'V') + " is out. You have " + Updater.Current +
+            ".\n\nYour settings stay. LoadoutGuard restarts by itself when the update is done.", "Update now", delegate { InstallUpdate(tag); }, "Later");
+    }
+
+    void InstallUpdate(string tag)
+    {
+        if (Program.RunByPowerShell)
+        {
+            updatePopup.Set("Updating...", "LoadoutGuard closes now and starts again in a few seconds.", null, null, null);
+            // install.ps1 installs the latest release and starts it; the pause lets this copy exit first
+            const string script = "Start-Sleep 3; irm https://raw.githubusercontent.com/Robtobbtull/LoadoutGuard/main/install.ps1 | iex";
+            Process.Start(new ProcessStartInfo(Application.ExecutablePath, "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command \"" + script + "\"")
+                { CreateNoWindow = true, UseShellExecute = false });
+            ExitThread();
+            return;
+        }
+
+        updatePopup.Set("Downloading update...", "This takes a few seconds. LoadoutGuard restarts by itself when it's done.", null, null, null);
+        string exe = Application.ExecutablePath;
+        ThreadPool.QueueUserWorkItem(delegate
+        {
+            string failed = null;
+            try
+            {
+                Updater.ReplaceExe(tag, exe);
+            }
+            catch (Exception e)
+            {
+                failed = e.Message;
+            }
+            ui.Post(delegate { FinishUpdate(exe, failed); }, null);
+        });
+    }
+
+    // Runs even if the popup was closed meanwhile: once the new exe is in place, LoadoutGuard must restart.
+    void FinishUpdate(string exe, string failed)
+    {
+        if (failed != null)
+        {
+            if (updatePopup == null) OpenUpdatePopup(); // closed during the download: reopen it to say what went wrong
+            updatePopup.Set("Couldn't update", failed + "\n\nYou can download the new LoadoutGuard.exe from the Releases page instead.",
+                "Open Releases", delegate { Process.Start(Updater.ReleasesPage); updatePopup.Close(); }, "Close");
+            return;
+        }
+        // the new copy starts once this one has exited, so it isn't stopped as a second instance
+        Process.Start(new ProcessStartInfo("cmd.exe", "/c ping -n 3 127.0.0.1 >nul & start \"\" \"" + exe + "\"") { CreateNoWindow = true, UseShellExecute = false });
         ExitThread();
     }
 
