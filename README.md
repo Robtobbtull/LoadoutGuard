@@ -23,21 +23,9 @@ The game writes no log line when you save a loadout or save insurance (checked o
 
 The button area is stored as a share of the game's menu area, so it fits **any resolution** (1080p, 1440p, 4K), with or without Windows display scaling. LoadoutGuard also **detects the aspect ratio** of the game window: Star Citizen draws its menus in a 16:9 area with black bars around it on **ultrawide (21:9, 32:9)** and **16:10** screens, and LoadoutGuard measures the click inside that area. Windowed mode works too: the window's title bar and borders are left out. Only the click position is used, not colours, so HDR doesn't matter.
 
-### Safe to use with Easy Anti-Cheat
-
-LoadoutGuard does **not**:
-
-- read or write game memory
-- inject anything into the game, or hook the game process
-- send keyboard or mouse input, or block or change any click
-- take screenshots
-- connect to the internet, except when you click **Check for updates**
-
-It reads a text file the game writes to disk, the same way community kill trackers do. While the loadout editor is open, it also uses a standard Windows low-level mouse hook to see where you click. That's the same mechanism Discord push-to-talk and AutoHotkey use, and it runs inside LoadoutGuard, not inside the game. No third-party tool is ever officially guaranteed safe by CIG, but this is a low-risk way for such a tool to work.
-
 ### Light on your PC
 
-About 30 MB of RAM and effectively 0% CPU. Once a second it checks whether `Game.log` grew and reads only the new part. The mouse watcher only runs while the editor is open, and does a few arithmetic checks per click.
+Under 20 MB of RAM in Task Manager and effectively 0% CPU. Once a second it checks whether `Game.log` grew and reads only the new part. The mouse watcher only runs while the editor is open, and does a few arithmetic checks per click.
 
 ## Install
 
@@ -57,7 +45,7 @@ Windows SmartScreen may warn you because the exe is not code-signed. Choose *Mor
 irm https://raw.githubusercontent.com/Robtobbtull/LoadoutGuard/main/install.ps1 | iex
 ```
 
-This downloads the source code of the latest release to `%LOCALAPPDATA%\LoadoutGuard`, adds **LoadoutGuard** to the Start menu and starts it. Each time LoadoutGuard starts, Windows PowerShell compiles that source in memory and runs it, so there is no exe for Smart App Control to block. Both scripts are short; read [install.ps1](install.ps1) and [LoadoutGuard.ps1](LoadoutGuard.ps1) first if you like. Starting takes a second or two longer than the exe, and it uses about 100 MB of RAM instead of 30 MB.
+This downloads the source code of the latest release to `%LOCALAPPDATA%\LoadoutGuard`, adds **LoadoutGuard** to the Start menu and starts it. Each time LoadoutGuard starts, Windows PowerShell compiles that source in memory and runs it, so there is no exe for Smart App Control to block. Both scripts are short; read [install.ps1](install.ps1) and [LoadoutGuard.ps1](LoadoutGuard.ps1) first if you like. Starting takes a second or two longer than the exe, and it uses more RAM, since PowerShell itself stays loaded.
 
 ### Update
 
