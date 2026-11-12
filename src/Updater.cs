@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 // "Check for updates" in the window: the only time LoadoutGuard goes online, and only when the player clicks it.
 static class Updater
 {
-    public const string Current = "1.0.1"; // must match the release tag without its "v"; CI checks this on tags
+    public const string Current = "1.0.2"; // must match the release tag without its "v"; CI checks this on tags
     const string Repo = "Robtobbtull/LoadoutGuard";
     public const string ReleasesPage = "https://github.com/" + Repo + "/releases";
 
