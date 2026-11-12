@@ -4,6 +4,8 @@ A tiny Windows tray app that reminds you to **save your ship insurance** after y
 
 Since the new insurance system, saving a loadout no longer updates your insurance. You also have to save insurance at an MFD. If you forget, you lose your upgraded components when the ship is destroyed. LoadoutGuard reminds you the moment you click **SAVE CHANGES AND EQUIP**.
 
+<p align="center"><img src="docs/showcase.gif" width="800" alt="Clicking SAVE CHANGES AND EQUIP in the Vehicle Loadout Manager: the screen flashes red and the reminder banner appears"></p>
+
 <p align="center"><img src="docs/screenshot.png" width="420" alt="The LoadoutGuard window in the Monochrome theme"></p>
 
 > Unofficial fan project. Not affiliated with or endorsed by Cloud Imperium Games. Star Citizen® is a trademark of Cloud Imperium Rights LLC.
