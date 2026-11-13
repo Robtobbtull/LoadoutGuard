@@ -13,6 +13,9 @@ class Detector
     // The game logs no line when the editor closes, so treat it as open this long after it opened.
     public static readonly TimeSpan EditorOpenFor = TimeSpan.FromMinutes(15);
     static readonly TimeSpan SameSave = TimeSpan.FromSeconds(10); // a double click on Save is one save
+    // Calling an elevator means the player left the terminal, so the editor is closed. Without this,
+    // a click on the same spot in another menu (mobiGlas Accept contract) reminded. Build 13165946.
+    static readonly Regex leftTerminal = new Regex("<SCEvtNotify_BuildingBlocksCallCarriage>", RegexOptions.CultureInvariant);
 
     readonly Regex editorOpened;
     DateTime editorOpenUntil = DateTime.MinValue, lastSave = DateTime.MinValue;
@@ -31,6 +34,7 @@ class Detector
     // Call for each new Game.log line. Returns true when the line shows the loadout editor opening.
     public bool Check(string line, DateTime now)
     {
+        if (leftTerminal.IsMatch(line)) editorOpenUntil = DateTime.MinValue;
         if (editorOpened == null || !editorOpened.IsMatch(line)) return false;
         editorOpenUntil = now + EditorOpenFor;
         return true;
@@ -43,6 +47,9 @@ class Detector
         if (!EditorProbablyOpen(now)) return null;
         bool sameSave = now - lastSave < SameSave;
         lastSave = now;
-        return sameSave ? null : LoadoutSavedMessage;
+        if (sameSave) return null;
+        // One reminder per editor visit: later clicks on that spot are other menus until the editor opens again.
+        editorOpenUntil = DateTime.MinValue;
+        return LoadoutSavedMessage;
     }
 }

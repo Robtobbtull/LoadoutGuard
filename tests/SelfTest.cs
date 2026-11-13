@@ -18,6 +18,7 @@ static class SelfTest
     const string ShipReloadLine = "<2026-11-08T00:44:05.580Z> [Notice] <ATC_Reset_VehiclesBeingStoredCleared> ATC 'CNOU_Mustang_ShipATCDataManager_917614485258' [917614485258] clearing 0 entries from vehicles-being-stored list on Reset [Team_MissionFeatures][ATC]";
     const string DuplicatePortLine = "<2026-11-08T00:39:35.458Z> [Error] <DuplicatedItemPorts> Error in entities passed to creation batch 'CLoadoutDummy::InitLoadout'. Found multiple entities attempting to attach to the same parent item port 1383588930 [Team_EntitySystemTech]";
     const string ShipSpawningLine = "<2026-10-14T19:22:16.145Z> [Notice] <CEntityComponentShipListProvider::SetVehicleSpawningInformations> SetVehicleSpawningInformations - VehicleEntityId: [881183460316], LandingArea: PLAYER's";
+    const string ElevatorCallLine = "<2026-11-13T19:03:21.000Z> [Notice] <SCEvtNotify_BuildingBlocksCallCarriage> [TRANSPORT] Player Robtobbtull[204706947423] triggered the call carriage event";
     const string VehicleListLine ="<2026-11-08T00:45:00.982Z> [Notice] <OnRequestFetchVehicles> Fetching player vehicle list [Team_GameServices][ASOP][Entitlement][Insurance]";
 
     static int failures;
@@ -89,9 +90,18 @@ static class SelfTest
         Check(save.EditorProbablyOpen(t.AddMinutes(1)), "the editor counts as open after its log line");
         Check(save.SaveClicked(t.AddSeconds(60)) == Detector.LoadoutSavedMessage, "clicking Save in the editor reminds");
         Check(save.SaveClicked(t.AddSeconds(62)) == null, "a double click is one save");
-        Check(save.SaveClicked(t.AddSeconds(120)) == Detector.LoadoutSavedMessage, "saving again later reminds again");
+        Check(!save.EditorProbablyOpen(t.AddSeconds(63)) && save.SaveClicked(t.AddMinutes(9)) == null, "a save closes the editor: a later click there (mobiGlas Accept) is ignored");
+        save.Check(EditorOpenLine, t.AddMinutes(10));
+        Check(save.SaveClicked(t.AddMinutes(11)) == Detector.LoadoutSavedMessage, "opening the editor again and saving reminds again");
+        save.Check(EditorOpenLine, t);
         var late = t + Detector.EditorOpenFor + TimeSpan.FromSeconds(1);
         Check(!save.EditorProbablyOpen(late) && save.SaveClicked(late) == null, "clicks long after the editor opened are ignored");
+
+        // Accepting a contract in mobiGlas after leaving the terminal: the Accept button sits where Save is
+        var left = new Detector(s.EditorOpenPattern);
+        left.Check(EditorOpenLine, t);
+        Check(!left.Check(ElevatorCallLine, t.AddMinutes(2)), "an elevator call is not the editor opening");
+        Check(!left.EditorProbablyOpen(t.AddMinutes(2)) && left.SaveClicked(t.AddMinutes(9)) == null, "calling an elevator closes the editor");
     }
 
     static void TestClickArea()
