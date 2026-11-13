@@ -13,7 +13,7 @@ if not exist "%CSC%" (
 
 if not exist bin mkdir bin
 
-"%CSC%" /nologo /target:winexe /optimize+ /out:bin\LoadoutGuard.exe /r:System.Windows.Forms.dll /r:System.Drawing.dll src\*.cs || exit /b 1
+"%CSC%" /nologo /target:winexe /optimize+ /win32icon:src\LoadoutGuard.ico /out:bin\LoadoutGuard.exe /r:System.Windows.Forms.dll /r:System.Drawing.dll src\*.cs || exit /b 1
 "%CSC%" /nologo /target:exe /out:bin\SelfTest.exe /r:System.Drawing.dll src\LogTail.cs src\Detector.cs src\Settings.cs src\ClickArea.cs src\Theme.cs src\Updater.cs tests\SelfTest.cs || exit /b 1
 rem Smart App Control (Windows 11) often blocks a freshly built exe on its first run, then allows it.
 bin\SelfTest.exe 2>nul || (ping -n 6 127.0.0.1 >nul & bin\SelfTest.exe) || exit /b 1

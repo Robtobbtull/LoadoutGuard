@@ -10,6 +10,10 @@ using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
+// the name Windows shows for the exe (Task Manager, Startup apps, search) instead of "LoadoutGuard.exe"
+[assembly: System.Reflection.AssemblyTitle("LoadoutGuard")]
+[assembly: System.Reflection.AssemblyProduct("LoadoutGuard")]
+
 // "Start with Windows": a value in the current user's Run key, the standard per-user startup list
 // (no admin rights needed). The registry itself is the setting, so it always shows what is really set.
 static class AutoStart

@@ -30,6 +30,8 @@
     $link.TargetPath = $powershell
     $link.Arguments = $arguments
     $link.Description = 'Reminds you to save your ship insurance in Star Citizen'
+    $icon = Join-Path $dir 'src\LoadoutGuard.ico'
+    if (Test-Path $icon) { $link.IconLocation = $icon } # older releases have no icon file
     $link.Save()
 
     $running = $null
