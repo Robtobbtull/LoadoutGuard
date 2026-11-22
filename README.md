@@ -66,7 +66,7 @@ Open the window (double-click the tray icon) and click **More...** at the top ri
 Open it by double-clicking the tray icon, or by starting `LoadoutGuard.exe` again. Every change applies at once; there's no Save button and no restart needed. On small or highly scaled screens (such as 1366x768, or a 1080p laptop at 150%) the window shrinks to fit.
 
 - **Banner**: how long the banner stays, **Message** for your own reminder text (leave it empty for the standard message), and **Test banner** to check that the banner and the blink show over your game.
-- **Red flash**: **Flash the screen red** turns the blink on or off. **Flash for** sets how long it blinks: 3 to 60 seconds, or **Until closed** to keep blinking until the banner closes. **Strength** makes the red more subtle: 10 to 100 %.
+- **Red flash**: **Flash the screen red** turns the blink on or off. **Flash for** sets how long it blinks: 3 to 60 seconds, or **Until closed** to keep blinking until the banner closes. **Strength** sets how strong the red is, from 1 (most subtle) to 5.
 - **General**: **Start with Windows** (on by default) and **Choose theme...**, which opens the theme picker: Monochrome (black and white, the default), Nebula (purple), Ember (clay), Midnight (blue), mobiGlas (cyan) or Paper (light). The theme also colours the banner, the tray icon and, on Windows 11, the title bar.
 - **More...** (top right): the version, **Check for updates** and **Uninstall...**.
 - **Path to Game.log**: where your log is. Type or paste the path, or use **Browse...**, for another drive or the PTU. If the log isn't found, this says so in red.
@@ -82,7 +82,7 @@ Everything is stored in `%APPDATA%\LoadoutGuard\settings.ini`. The window covers
 | `gameLog` | `C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\Game.log` | Log to watch. If missing, LoadoutGuard looks for a LIVE install on all fixed drives. Point it at `PTU\Game.log` for the PTU. |
 | `flash` | `true` | Blink the screen lightly red with each reminder. |
 | `flashSeconds` | `3` | How long it blinks, in seconds (one blink a second). `0` blinks until the banner closes. |
-| `flashStrength` | `100` | How strong the red is, in percent (1 to 100). Lower is more subtle. |
+| `flashStrength` | `2` | How strong the red is, from `1` (most subtle) to `5`. |
 | `theme` | `Monochrome` | `Monochrome`, `Nebula`, `Ember`, `Midnight`, `mobiGlas` or `Paper`. |
 | `editorOpenPattern` | `<UI - LoadoutEditor> .*(InitLoadout\|OnLoadoutQueriesFinished)` | Regular expression for the "editor opened" log line, which starts watching for Save clicks. Empty turns Save detection off. |
 | `saveButtonArea` | `0.754,0.799,0.904,0.856` | Where SAVE CHANGES AND EQUIP is: left,top,right,bottom as fractions of the game's 16:9 menu area (0 = left/top edge, 1 = right/bottom edge). On a 16:9 screen that is the whole game window. Use a dot as the decimal point. Empty turns Save detection off. |

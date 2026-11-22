@@ -10,7 +10,6 @@ class MainWindow : Form
 {
     static readonly int[] SecondSteps = { 5, 10, 15, 20, 30, 45, 60, 90, 120 };
     static readonly int[] FlashSteps = { 3, 5, 10, 20, 30, 60, 0 }; // 0 = until the banner closes
-    static readonly int[] StrengthSteps = { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
     public const int Height96 = 630;
     const int Width96 = 540, Pad = 24, Inner = Width96 - 2 * Pad, Right = Inner - 18, RowH = 48;
     const string FooterText = "Closing this window keeps LoadoutGuard running in the tray.";
@@ -116,7 +115,7 @@ class MainWindow : Form
         var strengthLabel = new Label { Text = "Strength", Font = Ui.Font(10.5f) };
         PlaceText(red, strengthLabel, 18, 2 * RowH + 5);
         rowTitles.Add(strengthLabel);
-        var strengthNote = new Label { Text = "Lower is more subtle", Font = Ui.Font(9f) };
+        var strengthNote = new Label { Text = "1 is the most subtle, 5 the strongest", Font = Ui.Font(9f) };
         PlaceText(red, strengthNote, 18, 2 * RowH + 26);
         rowNotes.Add(strengthNote);
         weaker.Text = "−";
@@ -263,21 +262,16 @@ class MainWindow : Form
         flashValue.Text = settings.FlashSeconds == 0 ? "Until closed" : settings.FlashSeconds + " s";
     }
 
-    // One step along StrengthSteps, from the nearest step (a hand-typed value may be between them).
     void SetStrength(int direction)
     {
-        int i = 0;
-        while (i < StrengthSteps.Length - 1 && StrengthSteps[i] < settings.FlashStrength) i++;
-        // StrengthSteps[i] is the first step >= the value: + lands on it if the value is between steps
-        if (StrengthSteps[i] == settings.FlashStrength || direction < 0) i += direction;
-        settings.FlashStrength = StrengthSteps[Math.Max(0, Math.Min(StrengthSteps.Length - 1, i))];
+        settings.FlashStrength = Math.Max(1, Math.Min(5, settings.FlashStrength + direction));
         ShowStrength();
         Changed();
     }
 
     void ShowStrength()
     {
-        strengthValue.Text = settings.FlashStrength + " %";
+        strengthValue.Text = settings.FlashStrength.ToString();
     }
 
     void Browse()

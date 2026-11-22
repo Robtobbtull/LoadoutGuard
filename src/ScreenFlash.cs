@@ -8,11 +8,14 @@ using System.Windows.Forms;
 class ScreenFlash : Form
 {
     const int PulseMs = 1000;
-    const double Peak = 0.22; // the strongest the red gets
+    // Strongest opacity of the red for strength 1 to 5. Small steps: even a little more red is a lot
+    // stronger over a dark game, and 1 is meant to be barely there.
+    static readonly double[] Peaks = { 0.044, 0.057, 0.073, 0.092, 0.12 };
     readonly Timer timer = new Timer { Interval = 15 };
     DateTime started;
     int seconds;
     double peak;
+    double carry; // the part of an alpha step not shown yet, see Step()
 
     public ScreenFlash()
     {
@@ -43,13 +46,14 @@ class ScreenFlash : Form
     }
 
     // Blinks for this many seconds, or with 0 until Stop() is called (when the banner closes).
-    // strength: percent of Peak, so players can make it more subtle.
+    // strength: 1 (most subtle) to 5.
     public void Blink(int seconds, int strength)
     {
         this.seconds = seconds;
-        peak = Peak * Math.Max(1, Math.Min(100, strength)) / 100.0;
+        peak = Peaks[Math.Max(1, Math.Min(Peaks.Length, strength)) - 1];
         Bounds = Ui.ActiveScreen().Bounds;
         started = DateTime.UtcNow;
+        carry = 0;
         Opacity = 0;
         if (!Visible) Show();
         timer.Start();
@@ -70,6 +74,12 @@ class ScreenFlash : Form
             return;
         }
         double s = Math.Sin(Math.PI * (ms % PulseMs) / PulseMs); // smooth in and out, no hard flicker
-        Opacity = peak * s * s;
+        // A window's alpha has only 256 steps, so a weak flash (peak alpha ~11 at 20 %) would ramp in
+        // visible jumps. Carrying the remainder to the next frame alternates between neighbouring steps,
+        // which averages out to the exact level, so the fade stays smooth at any strength.
+        double alpha = peak * s * s * 255 + carry;
+        double step = Math.Floor(alpha);
+        carry = alpha - step;
+        Opacity = (step + 0.5) / 255; // + 0.5: WinForms truncates Opacity * 255 to a byte
     }
 }
