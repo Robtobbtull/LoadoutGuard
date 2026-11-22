@@ -168,11 +168,13 @@ static class SelfTest
 
     static void TestSettings()
     {
-        var p = Settings.Parse(new[] { "; comment", "editorOpenPattern = a=b", "saveButtonArea=", "bannerSeconds=abc", "FLASH=false", "flashSeconds=-2", "unknown=true", "junk" });
+        var p = Settings.Parse(new[] { "; comment", "editorOpenPattern = a=b", "saveButtonArea=", "bannerSeconds=abc", "FLASH=false", "flashSeconds=-2", "flashStrength=0", "unknown=true", "junk" });
         Check(p.EditorOpenPattern == "a=b", "a value may contain '='");
         Check(p.SaveButtonArea == "", "an empty value is kept (turns Save detection off)");
         Check(p.BannerSeconds == new Settings().BannerSeconds, "a bad number keeps the default");
         Check(p.FlashSeconds == new Settings().FlashSeconds, "a negative flash time keeps the default");
+        Check(p.FlashStrength == 100, "a flash strength below 1 keeps the default");
+        Check(Settings.Parse(new[] { "flashStrength=250" }).FlashStrength == 100, "a flash strength above 100 is capped");
         Check(!p.Flash, "booleans and key case are handled; unknown keys are ignored");
         Check(Settings.Parse(new[] { "flash=maybe" }).Flash, "a bad boolean keeps the default");
         Check(!p.IsNew, "a parsed file is not a first run");
@@ -192,6 +194,7 @@ static class SelfTest
             original.BannerSeconds = 7;
             original.Flash = false;
             original.FlashSeconds = 0;
+            original.FlashStrength = 40;
             original.Theme = "Ember";
             original.SaveButtonArea = "0.1,0.2,0.3,0.4";
             original.CustomMessage = "Insure the ship = do it now!";
@@ -203,7 +206,7 @@ static class SelfTest
             Check(Settings.Parse(File.ReadAllLines(path)).CustomMessage == "Save insurance", "a line break in the custom message is saved as a space");
             Check(new Settings().CustomMessage == "", "no custom message by default");
             Check(back.GameLog == original.GameLog && back.EditorOpenPattern == original.EditorOpenPattern
-                && back.BannerSeconds == 7 && !back.Flash && back.FlashSeconds == 0 && back.Theme == "Ember"
+                && back.BannerSeconds == 7 && !back.Flash && back.FlashSeconds == 0 && back.FlashStrength == 40 && back.Theme == "Ember"
                 && back.SaveButtonArea == "0.1,0.2,0.3,0.4",
                 "saved settings read back unchanged");
         }

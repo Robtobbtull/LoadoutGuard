@@ -251,7 +251,7 @@ class TrayApp : ApplicationContext
     {
         // the player's own text replaces the standard Save reminder
         string message = settings.CustomMessage.Length > 0 ? settings.CustomMessage : Detector.LoadoutSavedMessage;
-        if (settings.Flash) flash.Blink(settings.FlashSeconds); // first, so the banner shows above the red
+        if (settings.Flash) flash.Blink(settings.FlashSeconds, settings.FlashStrength); // first, so the banner shows above the red
         banner.ShowMessage(message, settings.BannerSeconds);
     }
 

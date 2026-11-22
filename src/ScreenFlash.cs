@@ -12,6 +12,7 @@ class ScreenFlash : Form
     readonly Timer timer = new Timer { Interval = 15 };
     DateTime started;
     int seconds;
+    double peak;
 
     public ScreenFlash()
     {
@@ -42,9 +43,11 @@ class ScreenFlash : Form
     }
 
     // Blinks for this many seconds, or with 0 until Stop() is called (when the banner closes).
-    public void Blink(int seconds)
+    // strength: percent of Peak, so players can make it more subtle.
+    public void Blink(int seconds, int strength)
     {
         this.seconds = seconds;
+        peak = Peak * Math.Max(1, Math.Min(100, strength)) / 100.0;
         Bounds = Ui.ActiveScreen().Bounds;
         started = DateTime.UtcNow;
         Opacity = 0;
@@ -67,6 +70,6 @@ class ScreenFlash : Form
             return;
         }
         double s = Math.Sin(Math.PI * (ms % PulseMs) / PulseMs); // smooth in and out, no hard flicker
-        Opacity = Peak * s * s;
+        Opacity = peak * s * s;
     }
 }

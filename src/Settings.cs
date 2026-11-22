@@ -17,6 +17,7 @@ class Settings
     public string CustomMessage = ""; // empty = the standard Save reminder text
     public bool Flash = true; // a light red blink over the game with each reminder
     public int FlashSeconds = 3; // 0 = until the banner closes
+    public int FlashStrength = 100; // percent of the strongest red, 1-100
     public string Theme = "Monochrome";
 
     // True when no settings file existed yet (first run).
@@ -60,6 +61,7 @@ class Settings
                 case "custommessage": s.CustomMessage = value; break;
                 case "flash": s.Flash = Bool(value, s.Flash); break;
                 case "flashseconds": s.FlashSeconds = Number(value, 0, s.FlashSeconds); break;
+                case "flashstrength": s.FlashStrength = Math.Min(100, Number(value, 1, s.FlashStrength)); break;
                 case "theme": s.Theme = value; break;
             }
         }
@@ -86,6 +88,8 @@ class Settings
             "flash=" + Text(Flash),
             "; How long it blinks, in seconds (one blink per second). 0 = until the banner closes.",
             "flashSeconds=" + FlashSeconds,
+            "; How strong the red is, in percent (1 to 100). Lower is more subtle.",
+            "flashStrength=" + FlashStrength,
             "; Monochrome, Nebula, Ember, Midnight, mobiGlas or Paper.",
             "theme=" + Theme,
             "",

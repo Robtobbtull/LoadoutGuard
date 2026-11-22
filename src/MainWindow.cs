@@ -10,7 +10,8 @@ class MainWindow : Form
 {
     static readonly int[] SecondSteps = { 5, 10, 15, 20, 30, 45, 60, 90, 120 };
     static readonly int[] FlashSteps = { 3, 5, 10, 20, 30, 60, 0 }; // 0 = until the banner closes
-    public const int Height96 = 582;
+    static readonly int[] StrengthSteps = { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
+    public const int Height96 = 630;
     const int Width96 = 540, Pad = 24, Inner = Width96 - 2 * Pad, Right = Inner - 18, RowH = 48;
     const string FooterText = "Closing this window keeps LoadoutGuard running in the tray.";
 
@@ -18,10 +19,10 @@ class MainWindow : Form
     readonly Action changed, testBanner, checkUpdates, uninstall;
     readonly Mark mark = new Mark();
     readonly Label title = new Label(), footer = new Label();
-    readonly Label secondsValue = new Label(), flashValue = new Label(), themeName = new Label();
+    readonly Label secondsValue = new Label(), flashValue = new Label(), strengthValue = new Label(), themeName = new Label();
     readonly Toggle startup = new Toggle(), flash = new Toggle();
     readonly PillButton fewer = new PillButton(), more = new PillButton(), test = new PillButton();
-    readonly PillButton shorter = new PillButton(), longer = new PillButton();
+    readonly PillButton shorter = new PillButton(), longer = new PillButton(), weaker = new PillButton(), stronger = new PillButton();
     readonly PillButton chooseTheme = new PillButton(), browse = new PillButton(), options = new PillButton();
     readonly TextBox customMessage = new TextBox(), logPath = new TextBox();
     readonly List<Label> sections = new List<Label>(), rowTitles = new List<Label>(), rowNotes = new List<Label>();
@@ -97,7 +98,7 @@ class MainWindow : Form
 
         // red flash
         Section("Red flash", 212);
-        var red = AddCard(232, 2, RowH);
+        var red = AddCard(232, 3, RowH);
         ToggleRow(red, 0, flash, "Flash the screen red", "A light red blink over the game; it stays visible",
             settings.Flash, delegate { settings.Flash = flash.Checked; });
         var flashLabel = new Label { Text = "Flash for", Font = Ui.Font(10.5f) };
@@ -112,10 +113,22 @@ class MainWindow : Form
         ShowFlashSeconds();
         shorter.Click += delegate { SetFlashSeconds(-1); };
         longer.Click += delegate { SetFlashSeconds(+1); };
+        var strengthLabel = new Label { Text = "Strength", Font = Ui.Font(10.5f) };
+        PlaceText(red, strengthLabel, 18, 2 * RowH + 5);
+        rowTitles.Add(strengthLabel);
+        var strengthNote = new Label { Text = "Lower is more subtle", Font = Ui.Font(9f) };
+        PlaceText(red, strengthNote, 18, 2 * RowH + 26);
+        rowNotes.Add(strengthNote);
+        weaker.Text = "−";
+        stronger.Text = "+";
+        Stepper(red, 2, weaker, strengthValue, stronger, 64);
+        ShowStrength();
+        weaker.Click += delegate { SetStrength(-1); };
+        stronger.Click += delegate { SetStrength(+1); };
 
         // theme and startup
-        Section("General", 346);
-        var general = AddCard(366, 2, RowH);
+        Section("General", 394);
+        var general = AddCard(414, 2, RowH);
         var themeLabel = new Label { Text = "Theme", Font = Ui.Font(10.5f) };
         PlaceText(general, themeLabel, 18, 5);
         rowTitles.Add(themeLabel);
@@ -133,14 +146,14 @@ class MainWindow : Form
             AutoStart.Enabled, delegate { SetAutoStart(); });
 
         // Game.log
-        logSection = Section("Path to Game.log", 480);
+        logSection = Section("Path to Game.log", 528);
         // typed, pasted or browsed; same rounded frame as the message box
         var logFrame = new PathBox { Cursor = Cursors.IBeam };
-        Place(this, logFrame, Pad, 500, Inner - 108, 36);
+        Place(this, logFrame, Pad, 548, Inner - 108, 36);
         logFrame.Click += delegate { logPath.Focus(); };
         logPath.BorderStyle = BorderStyle.None;
         logPath.Text = settings.GameLog; // before the handler, so loading doesn't count as a change
-        Place(this, logPath, Pad + 12, 500, Inner - 108 - 24, 20);
+        Place(this, logPath, Pad + 12, 548, Inner - 108 - 24, 20);
         logPath.Top = logFrame.Top + (logFrame.Height - logPath.Height) / 2;
         logPath.BringToFront();
         logPath.TextChanged += delegate
@@ -150,12 +163,12 @@ class MainWindow : Form
         };
         logPath.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) e.SuppressKeyPress = true; }; // no error ding
         browse.Text = "Browse...";
-        Place(this, browse, Pad + Inner - 100, 500, 100, 36);
+        Place(this, browse, Pad + Inner - 100, 548, 100, 36);
         browse.Click += delegate { Browse(); };
 
         footer.Text = FooterText;
         footer.Font = Ui.Font(9f);
-        PlaceText(this, footer, Pad, 550);
+        PlaceText(this, footer, Pad, 598);
 
         ApplyTheme();
         Shown += delegate { ActiveControl = null; }; // no blinking caret in the message box on open
@@ -186,7 +199,7 @@ class MainWindow : Form
         Ui.StyleTitleBar(this, t);
 
         title.ForeColor = t.Text;
-        secondsValue.ForeColor = flashValue.ForeColor = customMessage.ForeColor = t.Text;
+        secondsValue.ForeColor = flashValue.ForeColor = strengthValue.ForeColor = customMessage.ForeColor = t.Text;
         logPath.ForeColor = t.Text2;
         customMessage.BackColor = logPath.BackColor = t.Side;
         footer.ForeColor = t.Text3;
@@ -248,6 +261,23 @@ class MainWindow : Form
     void ShowFlashSeconds()
     {
         flashValue.Text = settings.FlashSeconds == 0 ? "Until closed" : settings.FlashSeconds + " s";
+    }
+
+    // One step along StrengthSteps, from the nearest step (a hand-typed value may be between them).
+    void SetStrength(int direction)
+    {
+        int i = 0;
+        while (i < StrengthSteps.Length - 1 && StrengthSteps[i] < settings.FlashStrength) i++;
+        // StrengthSteps[i] is the first step >= the value: + lands on it if the value is between steps
+        if (StrengthSteps[i] == settings.FlashStrength || direction < 0) i += direction;
+        settings.FlashStrength = StrengthSteps[Math.Max(0, Math.Min(StrengthSteps.Length - 1, i))];
+        ShowStrength();
+        Changed();
+    }
+
+    void ShowStrength()
+    {
+        strengthValue.Text = settings.FlashStrength + " %";
     }
 
     void Browse()
